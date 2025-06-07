@@ -1,0 +1,49 @@
+# 淘宝直播间LABUBU商品搜索配置文件
+
+# 目标直播间URL
+target_url: "https://tbzb.taobao.com/live?spm=a21bo.29164217.0.0.5f185eb75NYJV6&liveSource=pc_live.haokanTab&liveId=522077137319"
+
+# 搜索关键字列表
+search_keywords:
+  - "LABUBU THE MONSTERS心动马卡龙搪胶脸盲盒"
+  - "THE MONSTERS 前方高能搪胶毛绒挂件"
+  - "THE MONSTERS可口可乐搪胶脸盲"
+  - "THE MONSTERS  坐坐派对搪胶毛绒盲"
+  - "POPMART泡泡玛特THE MONSTERS怪味便利店系列耳机包LABUBU"
+  # - "星星人系列盲盒封口夹磁吸收纳盒套组"
+
+# 监控设置
+monitoring:
+  # 检查间隔（秒）
+  min_interval: 10
+  max_interval: 40
+  # 搜索超时时间（毫秒）
+  search_timeout: 10000
+  # 页面加载超时时间（毫秒）
+  page_timeout: 30000
+
+# 浏览器设置
+browser:
+  # 是否显示浏览器窗口
+  headless: false
+  # 用户数据目录
+  user_data_dir: "user-data"
+  # 浏览器启动参数
+  args:
+    - "--disable-blink-features=AutomationControlled"
+    - "--disable-web-security"
+    - "--disable-features=VizDisplayCompositor"
+    - "--no-sandbox"
+    - "--disable-dev-shm-usage"
+  # 用户代理
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+# 选择器配置
+selectors:
+  # 搜索框相关选择器
+  search_input: "div[class*='head'] > div[class*='search'] > input[class*='input']"
+  search_button: "div[class*='head'] > div[class*='search'] > img[class*='searchBtn']"
+  # 商品相关选择器
+  product_title: "div[class*='titleText']"
+  buy_button: "div[class*='btnItem']"
+  goods_number: "[class*='goodsNum']"
