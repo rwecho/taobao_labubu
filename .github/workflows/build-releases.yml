@@ -125,7 +125,7 @@ jobs:
       uses: actions/checkout@v4
       
     - name: Download all artifacts
-      uses: actions/download-artifact@v4.6.2
+      uses: actions/download-artifact@v2
       with:
         path: artifacts
 
@@ -138,39 +138,7 @@ jobs:
         tag_name: ${{ github.event.inputs.version || github.ref_name }}
         release_name: LABUBU启动器 ${{ github.event.inputs.version || github.ref_name }}
         body: |
-          # LABUBU商品搜索程序 ${{ github.event.inputs.version || github.ref_name }}
-          
-          ## 📦 下载说明
-          
-          请根据您的操作系统下载对应的版本：
-          
-          - **Windows用户**：下载 `labubu-launcher-windows-*.zip`
-          - **macOS用户**：下载 `labubu-launcher-macos-*.tar.gz`  
-          - **Linux用户**：下载 `labubu-launcher-linux-*.tar.gz`
-          
-          ## 🚀 快速开始
-          
-          1. 下载并解压对应平台的压缩包
-          2. 运行启动器程序（Windows下双击.exe文件）
-          3. 首次运行时按提示登录淘宝账号
-          4. 程序会自动开始监控直播间商品
-          
-          ## ✨ 功能特性
-          
-          - ✅ 跨平台支持（Windows/macOS/Linux）
-          - ✅ 自动环境检查和依赖安装
-          - ✅ 智能商品搜索和监控
-          - ✅ 持久化登录状态
-          - ✅ 可配置的搜索关键字和监控间隔
-          - ✅ 声音提示功能
-          
-          ## 📝 更新日志
-          
-          - 添加跨平台自动构建
-          - 优化启动器环境检查逻辑
-          - 改进用户体验和错误处理
-          
-          **注意**：这是一个演示程序，不会实际执行购买操作。
+          版本号: ${{ github.event.inputs.version || github.ref_name }}
         draft: false
         prerelease: false
 
