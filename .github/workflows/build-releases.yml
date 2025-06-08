@@ -117,7 +117,7 @@ jobs:
         ls -lhs
 
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          powershell Compress-Archive -Path package/* -DestinationPath ${PACKAGE_NAME}.zip
+          Compress-Archive -Path package/* -DestinationPath ${PACKAGE_NAME}.zip
           echo "PACKAGE_FILE=${PACKAGE_NAME}.zip" >> $GITHUB_ENV
         else
           tar -czf ${PACKAGE_NAME}.tar.gz -C package .
