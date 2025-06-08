@@ -66,9 +66,9 @@ jobs:
         
         # Copy executable
         if [ "${{ matrix.platform }}" = "windows" ]; then
-          cp dist/${{ matrix.executable_name }} dist/package/
+          cp -r dist/${{ matrix.executable_name }} dist/package/
         else
-          cp dist/${{ matrix.executable_name }} dist/package/
+          cp -r dist/${{ matrix.executable_name }} dist/package/
           chmod +x dist/package/${{ matrix.executable_name }}
         fi
         
