@@ -113,6 +113,9 @@ jobs:
         
         # Create archive
         cd dist
+
+        ls -lhs
+
         if [ "${{ matrix.platform }}" = "windows" ]; then
           powershell Compress-Archive -Path package/* -DestinationPath ${PACKAGE_NAME}.zip
           echo "PACKAGE_FILE=${PACKAGE_NAME}.zip" >> $GITHUB_ENV
