@@ -18,7 +18,7 @@ jobs:
         include:
           - os: windows-latest
             platform: windows
-            executable_name: labubu-launcher
+            executable_name: labubu-launcher.exe
             python_version: '3.11'
           # - os: macos-latest
           #   platform: macos
