@@ -56,7 +56,34 @@ jobs:
       run: |
         pyinstaller launcher.spec
 
-    - name: Create distribution package
+    - name: Create distribution package (Windows)
+      if: matrix.platform == 'windows'
+      shell: pwsh
+      run: |
+        $VERSION = "${{ github.event.inputs.version || github.ref_name }}"
+        $PACKAGE_NAME = "labubu-launcher-${{ matrix.platform }}-$VERSION"
+        
+        New-Item -ItemType Directory -Force -Path "dist/package"
+        
+        # Copy executable
+        Copy-Item -Path "dist/${{ matrix.executable_name }}" -Destination "dist/package/" -Recurse
+        
+        # Copy configuration and documentation files
+        Copy-Item -Path "config.yaml" -Destination "dist/package/"
+        Copy-Item -Path "requirements.txt" -Destination "dist/package/"
+        
+        # Create archive
+        Set-Location "dist"
+        Get-ChildItem -Name
+        
+        Compress-Archive -Path "package/*" -DestinationPath "$PACKAGE_NAME.zip" -Force
+        
+        # Set environment variables for next steps
+        echo "PACKAGE_FILE=$PACKAGE_NAME.zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        echo "PACKAGE_NAME=$PACKAGE_NAME" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+    - name: Create distribution package (Linux/macOS)
+      if: matrix.platform != 'windows'
       shell: bash
       run: |
         VERSION="${{ github.event.inputs.version || github.ref_name }}"
@@ -65,65 +92,20 @@ jobs:
         mkdir -p dist/package
         
         # Copy executable
-        if [ "${{ matrix.platform }}" = "windows" ]; then
-          cp -r dist/${{ matrix.executable_name }} dist/package/
-        else
-          cp -r dist/${{ matrix.executable_name }} dist/package/
-          chmod +x dist/package/${{ matrix.executable_name }}
-        fi
+        cp -r dist/${{ matrix.executable_name }} dist/package/
+        chmod +x dist/package/${{ matrix.executable_name }}
         
         # Copy configuration and documentation files
         cp config.yaml dist/package/
         cp requirements.txt dist/package/
         
-        # Create README for the package
-        cat > dist/package/README.md << 'EOF'
-        # LABUBU商品搜索程序
-
-        ## 使用说明
-
-        1. **首次运行**：
-           - 运行 `${{ matrix.executable_name }}`
-           - 程序会自动检查和安装必要的依赖
-           - 首次运行时需要手动登录淘宝账号
-
-        2. **配置说明**：
-           - 可以编辑 `config.yaml` 文件修改搜索关键字和监控设置
-           - 搜索关键字在 `search_keywords` 部分配置
-           - 监控间隔在 `monitoring` 部分配置
-
-        3. **注意事项**：
-           - 这是一个演示程序，不会实际执行购买操作
-           - 程序使用Playwright自带的Chromium浏览器
-           - 登录状态会被保存，下次启动无需重新登录
-
-        ## 系统要求
-
-        - ${{ matrix.platform == 'windows' && 'Windows 10 或更高版本' || matrix.platform == 'macos' && 'macOS 10.15 或更高版本' || 'Ubuntu 18.04 或更高版本，或其他兼容的Linux发行版' }}
-        - 至少2GB可用内存
-        - 稳定的网络连接
-
-        ## 技术支持
-
-        如遇问题，请检查：
-        1. 网络连接是否正常
-        2. 防火墙是否阻止程序运行
-        3. 系统是否有足够的权限和存储空间
-        EOF
-        
         # Create archive
         cd dist
-
         ls -lhs
-
-        if [ "${{ matrix.platform }}" = "windows" ]; then
-          Compress-Archive -Path package/* -DestinationPath ${PACKAGE_NAME}.zip
-          echo "PACKAGE_FILE=${PACKAGE_NAME}.zip" >> $GITHUB_ENV
-        else
-          tar -czf ${PACKAGE_NAME}.tar.gz -C package .
-          echo "PACKAGE_FILE=${PACKAGE_NAME}.tar.gz" >> $GITHUB_ENV
-        fi
         
+        tar -czf ${PACKAGE_NAME}.tar.gz -C package .
+        
+        echo "PACKAGE_FILE=${PACKAGE_NAME}.tar.gz" >> $GITHUB_ENV
         echo "PACKAGE_NAME=${PACKAGE_NAME}" >> $GITHUB_ENV
 
     - name: Upload build artifacts
