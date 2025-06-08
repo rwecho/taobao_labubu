@@ -129,33 +129,19 @@ jobs:
       with:
         path: artifacts
 
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+    - name: Prepare release files
+      run: |
+        mkdir -p release-files
+        find artifacts -name "*.zip" -o -name "*.tar.gz" | xargs -I {} cp {} release-files/
+
+    - name: Upload to GitHub Release
+      uses: softprops/action-gh-release@v2
       with:
+        files: release-files/*
+        name: LABUBU启动器 ${{ github.event.inputs.version || github.ref_name }}
         tag_name: ${{ github.event.inputs.version || github.ref_name }}
-        release_name: LABUBU启动器 ${{ github.event.inputs.version || github.ref_name }}
         body: |
           版本号: ${{ github.event.inputs.version || github.ref_name }}
-        draft: false
         prerelease: false
-
-    - name: Upload Release Assets
-      run: |
-        VERSION="${{ github.event.inputs.version || github.ref_name }}"
-        
-        for platform in windows macos linux; do
-          artifact_dir="artifacts/labubu-launcher-${platform}-${VERSION}"
-          if [ -d "$artifact_dir" ]; then
-            for file in "$artifact_dir"/*; do
-              if [ -f "$file" ]; then
-                echo "Uploading $file..."
-                gh release upload "$VERSION" "$file" --clobber
-              fi
-            done
-          fi
-        done
       env:
         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
