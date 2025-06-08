@@ -1,0 +1,284 @@
+name: Build Cross-Platform Releases
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            executable_name: labubu-launcher.exe
+            python_version: '3.11'
+          - os: macos-latest
+            platform: macos
+            executable_name: labubu-launcher
+            python_version: '3.11'
+          - os: ubuntu-latest
+            platform: linux
+            executable_name: labubu-launcher
+            python_version: '3.11'
+
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python_version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python_version }}
+
+    - name: Install system dependencies (Ubuntu)
+      if: matrix.platform == 'linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libnss3-dev libatk-bridge2.0-dev libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libxss1 libasound2
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install -r requirements.txt
+
+    - name: Install Playwright browsers
+      run: |
+        python -m playwright install chromium
+
+    - name: Create launcher spec file
+      run: |
+        python -c "
+import os
+from pathlib import Path
+
+spec_content = '''
+# -*- mode: python ; coding: utf-8 -*-
+
+block_cipher = None
+
+a = Analysis(
+    ['launcher.py'],
+    pathex=[],
+    binaries=[],
+    datas=[
+        ('config.yaml', '.'),
+        ('requirements.txt', '.'),
+        ('main.py', '.'),
+    ],
+    hiddenimports=[
+        'playwright',
+        'playwright._impl',
+        'yaml',
+        'asyncio',
+        'logging',
+        'subprocess',
+        'platform',
+        'urllib.request',
+        'tempfile',
+        'shutil',
+        'json',
+    ],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
+    noarchive=False,
+)
+
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    [],
+    name='${{ matrix.executable_name }}',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=True,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon=None,
+)
+'''
+
+with open('launcher.spec', 'w', encoding='utf-8') as f:
+    f.write(spec_content)
+"
+
+    - name: Build executable with PyInstaller
+      run: |
+        pyinstaller launcher.spec
+
+    - name: Create distribution package
+      shell: bash
+      run: |
+        VERSION="${{ github.event.inputs.version || github.ref_name }}"
+        PACKAGE_NAME="labubu-launcher-${{ matrix.platform }}-${VERSION}"
+        
+        mkdir -p dist/package
+        
+        # Copy executable
+        if [ "${{ matrix.platform }}" = "windows" ]; then
+          cp dist/${{ matrix.executable_name }} dist/package/
+        else
+          cp dist/${{ matrix.executable_name }} dist/package/
+          chmod +x dist/package/${{ matrix.executable_name }}
+        fi
+        
+        # Copy configuration and documentation files
+        cp config.yaml dist/package/
+        cp requirements.txt dist/package/
+        
+        # Create README for thekage
+        cat > dist/package/README.md << 'EOF'
+        # LABUBU商品搜索程序
+
+        ## 使用说明
+
+        1. **首次运行**：
+           - 运行 `${{ matrix.executable_name }}`
+           - 程序会自动检查和安装必要的依赖
+           - 首次运行时需要手动登录淘宝账号
+
+        2. **配置说明**：
+           - 可以编辑 `config.yaml` 文件修改搜索关键字和监控设置
+           - 搜索关键字在 `search_keywords` 部分配置
+           - 监控间隔在 `monitoring` 部分配置
+
+        3. **注意事项**：
+           - 这是一个演示程序，不会实际执行购买操作
+           - 程序使用Playwright自带的Chromium浏览器
+           - 登录状态会被保存，下次启动无需重新登录
+
+        ## 系统要求
+
+        - ${{ matrix.platform == 'windows' && 'Windows 10 或更高版本' || matrix.platform == 'macos' && 'macOS 10.15 或更高版本' || 'Ubuntu 18.04 或更高版本，或其他兼容的Linux发行版' }}
+        - 至少2GB可用内存
+        - 稳定的网络连接
+
+        ## 技术支持
+
+        如遇问题，请检查：
+        1. 网络连接是否正常
+        2. 防火墙是否阻止程序运行
+        3. 系统是否有足够的权限和存储空间
+        EOF
+        
+        # Create archive
+        cd dist
+        if [ "${{ matrix.platform }}" = "windows" ]; then
+          powershell Compress-Archive -Path package/* -DestinationPath ${PACKAGE_NAME}.zip
+          echo "PACKAGE_FILE=${PACKAGE_NAME}.zip" >> $GITHUB_ENV
+        else
+          tar -czf ${PACKAGE_NAME}.tar.gz -C package .
+          echo "PACKAGE_FILE=${PACKAGE_NAME}.tar.gz" >> $GITHUB_ENV
+        fi
+        
+        echo "PACKAGE_NAME=${PACKAGE_NAME}" >> $GITHUB_ENV
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ env.PACKAGE_NAME }}
+        path: dist/${{ env.PACKAGE_FILE }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.event.inputs.version || github.ref_name }}
+        release_name: LABUBU启动器 ${{ github.event.inputs.version || github.ref_name }}
+        body: |
+          # LABUBU商品搜索程序 ${{ github.event.inputs.version || github.ref_name }}
+          
+          ## 📦 下载说明
+          
+          请根据您的操作系统下载对应的版本：
+          
+          - **Windows用户**：下载 `labubu-launcher-windows-*.zip`
+          - **macOS用户**：下载 `labubu-launcher-macos-*.tar.gz`  
+          - **Linux用户**：下载 `labubu-launcher-linux-*.tar.gz`
+          
+          ## 🚀 快速开始
+          
+          1. 下载并解压对应平台的压缩包
+          2. 运行启动器程序（Windows下双击.exe文件）
+          3. 首次运行时按提示登录淘宝账号
+          4. 程序会自动开始监控直播间商品
+          
+          ## ✨ 功能特性
+          
+          - ✅ 跨平台支持（Windows/macOS/Linux）
+          - ✅ 自动环境检查和依赖安装
+          - ✅ 智能商品搜索和监控
+          - ✅ 持久化登录状态
+          - ✅ 可配置的搜索关键字和监控间隔
+          - ✅ 声音提示功能
+          
+          ## 📝 更新日志
+          
+          - 添加跨平台自动构建
+          - 优化启动器环境检查逻辑
+          - 改进用户体验和错误处理
+          
+          **注意**：这是一个演示程序，不会实际执行购买操作。
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Assets
+      run: |
+        VERSION="${{ github.event.inputs.version || github.ref_name }}"
+        
+        for platform in windows macos linux; do
+          artifact_dir="artifacts/labubu-launcher-${platform}-${VERSION}"
+          if [ -d "$artifact_dir" ]; then
+            for file in "$artifact_dir"/*; do
+              if [ -f "$file" ]; then
+                echo "Uploading $file..."
+                gh release upload "$VERSION" "$file" --clobber
+              fi
+            done
+          fi
+        done
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

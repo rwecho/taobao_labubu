@@ -12,8 +12,16 @@ import subprocess
 import sys
 import os
 import yaml
-import pyttsx3
 from playwright.async_api import async_playwright
+
+# Windows平台的声音模块
+try:
+    import winsound
+
+    SOUND_AVAILABLE = True
+except ImportError:
+    # 非Windows平台，使用系统beep
+    SOUND_AVAILABLE = False
 
 # 配置日志
 logging.basicConfig(
@@ -30,9 +38,6 @@ class TaobaoLiveSearcher:
         self.page = None
         self.playwright = None
 
-        # 初始化TTS引擎
-        self.tts_engine = self.init_tts()
-
         # 加载配置文件
         self.config = self.load_config(config_file)
 
@@ -44,41 +49,22 @@ class TaobaoLiveSearcher:
         self.is_running = True  # 控制循环运行
         self.check_count = 0  # 检查次数计数器
 
-    def init_tts(self):
-        """初始化TTS语音引擎"""
+    def play_beep(self, message=""):
+        """播放beep声音提示"""
         try:
-            engine = pyttsx3.init()
-            # 设置语音属性
-            engine.setProperty("rate", 150)  # 语速
-            engine.setProperty("volume", 0.8)  # 音量
-
-            # 尝试设置中文语音
-            voices = engine.getProperty("voices")
-            for voice in voices:
-                if (
-                    "chinese" in voice.name.lower()
-                    or "mandarin" in voice.name.lower()
-                    or "zh" in voice.id.lower()
-                ):
-                    engine.setProperty("voice", voice.id)
-                    break
-
-            logger.info("✅ TTS语音引擎初始化成功")
-            return engine
-        except Exception as e:
-            logger.warning(f"⚠️ TTS初始化失败: {e}")
-            return None
-
-    def speak(self, text):
-        """播放TTS语音"""
-        try:
-            if self.tts_engine:
-                self.tts_engine.say(text)
-                self.tts_engine.runAndWait()
+            if SOUND_AVAILABLE:
+                # Windows平台使用winsound
+                winsound.Beep(2000, 200)  # 高频短促警报声
+                winsound.Beep(1500, 200)
+                winsound.Beep(2000, 200)
+                winsound.Beep(1500, 200)
+                logger.info(f"🔊 已播放beep提示音 - {message}")
             else:
-                logger.info(f"🔊 TTS: {text}")
+                # Linux/macOS平台使用系统beep
+                os.system('echo -e "\a"')  # 系统响铃
+                logger.info(f"🔊 已播放系统beep - {message}")
         except Exception as e:
-            logger.error(f"❌ TTS播放失败: {e}")
+            logger.error(f"❌ 播放beep失败: {e}")
 
     def load_config(self, config_file):
         """加载配置文件"""
@@ -286,7 +272,7 @@ class TaobaoLiveSearcher:
                 return False
 
         except Exception as e:
-            self.speak("输入搜索关键字失败")
+            self.play_beep("输入搜索关键字失败")
             logger.error(f"❌ 输入搜索关键字失败: {e}")
             return False
 
@@ -397,7 +383,7 @@ class TaobaoLiveSearcher:
                     await buy_button.click()
 
                     # 播放声音，提示购买按钮已点击
-                    self.speak("购买按钮已点击")
+                    self.play_beep("购买按钮已点击")
                     logger.info("🔊 已播放提示音 - 购买按钮已点击")
 
                     break
