@@ -20,14 +20,14 @@ jobs:
             platform: windows
             executable_name: labubu-launcher
             python_version: '3.11'
-          - os: macos-latest
-            platform: macos
-            executable_name: labubu-launcher
-            python_version: '3.11'
-          - os: ubuntu-latest
-            platform: linux
-            executable_name: labubu-launcher
-            python_version: '3.11'
+          # - os: macos-latest
+          #   platform: macos
+          #   executable_name: labubu-launcher
+          #   python_version: '3.11'
+          # - os: ubuntu-latest
+          #   platform: linux
+          #   executable_name: labubu-launcher
+          #   python_version: '3.11'
 
     runs-on: ${{ matrix.os }}
     
