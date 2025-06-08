@@ -20,14 +20,14 @@ jobs:
             platform: windows
             executable_name: labubu-launcher.exe
             python_version: '3.11'
-          # - os: macos-latest
-          #   platform: macos
-          #   executable_name: labubu-launcher
-          #   python_version: '3.11'
-          # - os: ubuntu-latest
-          #   platform: linux
-          #   executable_name: labubu-launcher
-          #   python_version: '3.11'
+          - os: macos-latest
+            platform: macos
+            executable_name: labubu-launcher
+            python_version: '3.11'
+          - os: ubuntu-latest
+            platform: linux
+            executable_name: labubu-launcher
+            python_version: '3.11'
 
     runs-on: ${{ matrix.os }}
     
@@ -71,6 +71,7 @@ jobs:
         # Copy configuration and documentation files
         Copy-Item -Path "config.yaml" -Destination "dist/package/"
         Copy-Item -Path "requirements.txt" -Destination "dist/package/"
+        Copy-Item -Path "main.py" -Destination "dist/package/"
         
         # Create archive
         Set-Location "dist"
@@ -98,6 +99,7 @@ jobs:
         # Copy configuration and documentation files
         cp config.yaml dist/package/
         cp requirements.txt dist/package/
+        cp main.py dist/package/
         
         # Create archive
         cd dist
