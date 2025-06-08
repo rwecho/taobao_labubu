@@ -1,12 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 a = Analysis(
-    ['D:/workspace/git/labubu/launcher.py'],
-    pathex=['D:/workspace/git/labubu'],
+    ['launcher.py'],
+    pathex=['.'],
     binaries=[],
     datas=[
         ('config.yaml', '.'),
         ('requirements.txt', '.'),
+        ('main.py', '.'),
     ],
     hiddenimports=[
         'yaml',
@@ -29,8 +30,8 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
+    [],
+    [],
     [],
     name='labubu-launcher',
     debug=False,
@@ -46,4 +47,16 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=None,
+    contents_directory='.'
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    name='labubu-launcher',
 )

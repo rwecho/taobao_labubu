@@ -2,3 +2,5 @@ user-data
 .browser_installed
 .deps_installed
 .pip_upgraded
+dist
+build

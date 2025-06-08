@@ -19,10 +19,18 @@ import json
 class LabubuLauncher:
     def __init__(self):
         self.system = platform.system().lower()
-        self.script_dir = Path(__file__).parent.absolute()
+
+        # 确定工作目录 - 使用可执行文件所在目录而非脚本目录
+        if getattr(sys, "frozen", False):
+            # PyInstaller打包后的情况 - 使用可执行文件所在目录
+            self.script_dir = Path(sys.executable).parent.absolute()
+        else:
+            # 开发环境 - 使用脚本目录
+            self.script_dir = Path(__file__).parent.absolute()
+
         self.python_cmd = None
 
-        # 标记文件
+        # 标记文件都保存在工作目录
         self.pip_upgraded_flag = self.script_dir / ".pip_upgraded"
         self.deps_installed_flag = self.script_dir / ".deps_installed"
         self.browser_installed_flag = self.script_dir / ".browser_installed"
@@ -345,7 +353,8 @@ class LabubuLauncher:
         """检查配置文件"""
         self.print_step("检查配置文件...")
 
-        config_file = self.script_dir / "config.yaml"
+        # 使用新的资源路径获取方法
+        config_file = self.get_resource_path("config.yaml")
         if not config_file.exists():
             self.print_error("未找到config.yaml配置文件")
             return False
@@ -353,18 +362,32 @@ class LabubuLauncher:
         self.print_success("配置文件检查完成")
         return True
 
+    def get_resource_path(self, relative_path):
+        """获取资源文件路径，确保在固定目录运行"""
+        # 获取可执行文件所在目录
+        if getattr(sys, "frozen", False):
+            # PyInstaller打包后的情况 - 使用可执行文件所在目录
+            base_path = Path(sys.executable).parent
+        else:
+            # 开发环境 - 使用脚本目录
+            base_path = self.script_dir
+
+        return base_path / relative_path
+
     def run_main_program(self):
         """运行主程序"""
         self.print_step("启动LABUBU商品搜索程序...")
         print("=" * 50)
 
-        main_file = self.script_dir / "main.py"
+        # 使用新的资源路径获取方法
+        main_file = self.get_resource_path("main.py")
+
         if not main_file.exists():
-            self.print_error("未找到main.py文件")
+            self.print_error(f"未找到main.py文件: {main_file}")
             return False
 
         try:
-            # 切换到脚本目录
+            # 切换到脚本目录（保持工作目录一致性）
             os.chdir(self.script_dir)
 
             cmd = self.python_cmd.split() + [str(main_file)]

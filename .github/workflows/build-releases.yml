@@ -18,7 +18,7 @@ jobs:
         include:
           - os: windows-latest
             platform: windows
-            executable_name: labubu-launcher.exe
+            executable_name: labubu-launcher
             python_version: '3.11'
           - os: macos-latest
             platform: macos
@@ -52,83 +52,6 @@ jobs:
         pip install pyinstaller
         pip install -r requirements.txt
 
-    - name: Install Playwright browsers
-      run: |
-        python -m playwright install chromium
-
-    - name: Create launcher spec file
-      run: |
-        python -c "
-import os
-from pathlib import Path
-
-spec_content = '''
-# -*- mode: python ; coding: utf-8 -*-
-
-block_cipher = None
-
-a = Analysis(
-    ['launcher.py'],
-    pathex=[],
-    binaries=[],
-    datas=[
-        ('config.yaml', '.'),
-        ('requirements.txt', '.'),
-        ('main.py', '.'),
-    ],
-    hiddenimports=[
-        'playwright',
-        'playwright._impl',
-        'yaml',
-        'asyncio',
-        'logging',
-        'subprocess',
-        'platform',
-        'urllib.request',
-        'tempfile',
-        'shutil',
-        'json',
-    ],
-    hookspath=[],
-    hooksconfig={},
-    runtime_hooks=[],
-    excludes=[],
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
-    noarchive=False,
-)
-
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    [],
-    name='${{ matrix.executable_name }}',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=True,
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    icon=None,
-)
-'''
-
-with open('launcher.spec', 'w', encoding='utf-8') as f:
-    f.write(spec_content)
-"
-
     - name: Build executable with PyInstaller
       run: |
         pyinstaller launcher.spec
@@ -153,7 +76,7 @@ with open('launcher.spec', 'w', encoding='utf-8') as f:
         cp config.yaml dist/package/
         cp requirements.txt dist/package/
         
-        # Create README for thekage
+        # Create README for the package
         cat > dist/package/README.md << 'EOF'
         # LABUBU商品搜索程序
 
